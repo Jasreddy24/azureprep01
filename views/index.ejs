@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home - Perfume Store</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { user: typeof user !== 'undefined' ? user : null }) %>
+  
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Welcome to Perfume Store</h1>
+        <p>Discover your signature scent from our exquisite collection</p>
+        <a href="/products" class="btn btn-primary">Shop Now</a>
+      </div>
+    </section>
+
+    <section class="featured-products">
+      <div class="container">
+        <h2>Featured Products</h2>
+        <div id="featured-products" class="products-grid">
+          <!-- Products will be loaded here -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Load featured products
+    fetch('/api/products?limit=6')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('featured-products');
+        if (data.products && data.products.length > 0) {
+          container.innerHTML = data.products.map(product => `
+            <div class="product-card">
+              <img src="${product.image_url}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300'">
+              <h3>${product.name}</h3>
+              <p class="brand">${product.brand}</p>
+              <p class="price">$${product.price.toFixed(2)}</p>
+              <a href="/product/${product.id}" class="btn btn-secondary">View Details</a>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p>No products available</p>';
+        }
+      })
+      .catch(err => console.error('Error loading products:', err));
+  </script>
+</body>
+</html>

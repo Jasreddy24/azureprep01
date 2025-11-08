@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details - Perfume Store</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { user: typeof user !== 'undefined' ? user : null }) %>
+  
+  <main>
+    <section class="product-detail-page">
+      <div class="container">
+        <div id="product-detail">
+          <!-- Product details will be loaded here -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const productId = '<%= productId %>';
+    const user = <%= typeof user !== 'undefined' && user ? JSON.stringify(user) : 'null' %>;
+    
+    fetch(`/api/products/${productId}`)
+      .then(res => res.json())
+      .then(product => {
+        const container = document.getElementById('product-detail');
+        container.innerHTML = `
+          <div class="product-detail-container">
+            <div class="product-image">
+              <img src="${product.image_url}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/500'">
+            </div>
+            <div class="product-info">
+              <h1>${product.name}</h1>
+              <p class="brand">${product.brand}</p>
+              <p class="category">Category: ${product.category}</p>
+              <p class="price">$${product.price.toFixed(2)}</p>
+              <p class="description">${product.description}</p>
+              <div class="stock-info">
+                ${product.stock > 0 ? `<span class="in-stock">In Stock (${product.stock} available)</span>` : '<span class="out-of-stock">Out of Stock</span>'}
+              </div>
+              ${product.stock > 0 ? `
+                <div class="quantity-selector">
+                  <label>Quantity:</label>
+                  <input type="number" id="quantity" min="1" max="${product.stock}" value="1">
+                </div>
+                <button onclick="addToCart(${product.id})" class="btn btn-primary">Add to Cart</button>
+              ` : '<button disabled class="btn btn-disabled">Out of Stock</button>'}
+            </div>
+          </div>
+        `;
+      })
+      .catch(err => {
+        document.getElementById('product-detail').innerHTML = '<p>Product not found</p>';
+      });
+
+    function addToCart(productId) {
+      const quantity = parseInt(document.getElementById('quantity').value) || 1;
+
+      if (!user) {
+        alert('Please login to add items to cart');
+        window.location.href = '/login';
+        return;
+      }
+
+      fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId, quantity })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert('Item added to cart!');
+        }
+      })
+      .catch(err => {
+        alert('Error adding to cart');
+      });
+    }
+  </script>
+</body>
+</html>

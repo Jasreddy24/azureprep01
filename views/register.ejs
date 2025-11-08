@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Perfume Store</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { user: typeof user !== 'undefined' ? user : null }) %>
+  
+  <main>
+    <section class="auth-page">
+      <div class="container">
+        <div class="auth-container">
+          <h1>Register</h1>
+          <form id="register-form">
+            <div class="form-group">
+              <label>Name:</label>
+              <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+              <label>Email:</label>
+              <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+              <label>Password:</label>
+              <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+            <p>Already have an account? <a href="/login">Login here</a></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/js/main.js"></script>
+  <script>
+    document.getElementById('register-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert('Registration successful!');
+          window.location.href = '/';
+        }
+      })
+      .catch(err => alert('Registration failed'));
+    });
+  </script>
+</body>
+</html>

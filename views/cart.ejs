@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart - Perfume Store</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { user: typeof user !== 'undefined' ? user : null }) %>
+  
+  <main>
+    <section class="cart-page">
+      <div class="container">
+        <h1>Shopping Cart</h1>
+        <div id="cart-container">
+          <!-- Cart items will be loaded here -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/js/main.js"></script>
+  <script>
+    function loadCart() {
+      fetch('/api/cart')
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('cart-container');
+          if (data.items && data.items.length > 0) {
+            container.innerHTML = `
+              <div class="cart-items">
+                ${data.items.map(item => `
+                  <div class="cart-item">
+                    <img src="${item.image_url}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150'">
+                    <div class="item-info">
+                      <h3>${item.name}</h3>
+                      <p class="price">$${item.price.toFixed(2)}</p>
+                    </div>
+                    <div class="quantity-controls">
+                      <button onclick="updateQuantity(${item.product_id}, ${item.quantity - 1})">-</button>
+                      <span>${item.quantity}</span>
+                      <button onclick="updateQuantity(${item.product_id}, ${item.quantity + 1})">+</button>
+                    </div>
+                    <div class="item-total">
+                      <p>$${(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
+                    <button onclick="removeItem(${item.product_id})" class="btn-remove">Remove</button>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="cart-summary">
+                <h2>Total: $${data.total.toFixed(2)}</h2>
+                <a href="/checkout" class="btn btn-primary">Proceed to Checkout</a>
+              </div>
+            `;
+          } else {
+            container.innerHTML = '<p>Your cart is empty</p><a href="/products" class="btn btn-primary">Continue Shopping</a>';
+          }
+        })
+        .catch(err => {
+          console.error('Error loading cart:', err);
+          alert('Please login to view your cart');
+          window.location.href = '/login';
+        });
+    }
+
+    function updateQuantity(productId, quantity) {
+      if (quantity <= 0) {
+        removeItem(productId);
+        return;
+      }
+
+      fetch('/api/cart/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId, quantity })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          loadCart();
+        }
+      })
+      .catch(err => alert('Error updating cart'));
+    }
+
+    function removeItem(productId) {
+      fetch('/api/cart/remove', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        loadCart();
+      })
+      .catch(err => alert('Error removing item'));
+    }
+
+    loadCart();
+  </script>
+</body>
+</html>

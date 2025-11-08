@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products - Perfume Store</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { user: typeof user !== 'undefined' ? user : null }) %>
+  
+  <main>
+    <section class="products-page">
+      <div class="container">
+        <h1>All Products</h1>
+        
+        <div class="filters">
+          <input type="text" id="search-input" placeholder="Search products..." class="search-input">
+          <select id="category-filter" class="category-filter">
+            <option value="">All Categories</option>
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+            <option value="Unisex">Unisex</option>
+          </select>
+        </div>
+
+        <div id="products-container" class="products-grid">
+          <!-- Products will be loaded here -->
+        </div>
+
+        <div id="pagination" class="pagination">
+          <!-- Pagination will be loaded here -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let currentPage = 1;
+    const limit = 12;
+
+    function loadProducts(page = 1, category = '', search = '') {
+      const params = new URLSearchParams({
+        page,
+        limit,
+        ...(category && { category }),
+        ...(search && { search })
+      });
+
+      fetch(`/api/products?${params}`)
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('products-container');
+          if (data.products && data.products.length > 0) {
+            container.innerHTML = data.products.map(product => `
+              <div class="product-card">
+                <img src="${product.image_url}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300'">
+                <h3>${product.name}</h3>
+                <p class="brand">${product.brand}</p>
+                <p class="price">$${product.price.toFixed(2)}</p>
+                <div class="stock-info">${product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}</div>
+                <a href="/product/${product.id}" class="btn btn-secondary">View Details</a>
+              </div>
+            `).join('');
+
+            // Pagination
+            const totalPages = Math.ceil(data.total / limit);
+            const pagination = document.getElementById('pagination');
+            if (totalPages > 1) {
+              let paginationHTML = '';
+              if (page > 1) {
+                paginationHTML += `<button onclick="loadProducts(${page - 1}, '${category}', '${search}')">Previous</button>`;
+              }
+              for (let i = 1; i <= totalPages; i++) {
+                if (i === page) {
+                  paginationHTML += `<button class="active">${i}</button>`;
+                } else {
+                  paginationHTML += `<button onclick="loadProducts(${i}, '${category}', '${search}')">${i}</button>`;
+                }
+              }
+              if (page < totalPages) {
+                paginationHTML += `<button onclick="loadProducts(${page + 1}, '${category}', '${search}')">Next</button>`;
+              }
+              pagination.innerHTML = paginationHTML;
+            } else {
+              pagination.innerHTML = '';
+            }
+          } else {
+            container.innerHTML = '<p>No products found</p>';
+          }
+        })
+        .catch(err => console.error('Error loading products:', err));
+    }
+
+    document.getElementById('category-filter').addEventListener('change', (e) => {
+      currentPage = 1;
+      loadProducts(1, e.target.value, document.getElementById('search-input').value);
+    });
+
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadProducts(1, document.getElementById('category-filter').value, e.target.value);
+      }, 500);
+    });
+
+    loadProducts();
+  </script>
+</body>
+</html>
